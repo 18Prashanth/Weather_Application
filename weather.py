@@ -79,6 +79,46 @@ class WeatherApp(QWidget):
         url = f"https://api.openweathermap.org/data/2.5/weather?q={
             city}&appid={api_key}"
 
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+
+            if data["cod"] == 200:
+                self.display_weather(data)
+        except requests.exceptions.HTTPError:
+            match response.status_code:
+                case 400:
+                    self.display_error("Bad Request:\nPlease check your input")
+                case 401:
+                    self.display_error("Unauthorized:\nInvalid API key")
+                case 403:
+                    self.display_error("Forbidden:\nAccess is denied")
+                case 404:
+                    self.display_error("Not Found:\nCity not found")
+                case 500:
+                    self.display_error(
+                        "Internal server Error:\nPlease try again later")
+                case 502:
+                    self.display_error(
+                        "Bad Gateway:\nInvalid responses from the server")
+                case 503:
+                    self.display_error("Service unavilable:\nService is down")
+                case 504:
+                    self.display_error(
+                        "Gateway timeout:\nNo response from the server")
+                case _:
+                    self.display_error(f"HTTP error occured:\n{http_error}")
+
+        except requests.exceptions.ConnectionError:
+            print("Connection Error:\nCheck your internet connection")
+        except requests.exceptions.Timeout:
+            print("Timeout Error\nThe request timed out")
+        except requests.exceptions.TooManyRedirects:
+            print("Too many redirects:\ncheck the URL")
+        except requests.exceptions.RequestException as req_error:
+            print(f"Request Error:\n{req_error}")
+
     def display_error(self, message):
         self.tempearture_label.setStyleSheet("font-size: 36px;")
         self.tempearture_label.setText(message)
